@@ -5,13 +5,24 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strconv"
 
 	_ "modernc.org/sqlite"
 )
 
-var DB *sql.DB
+type Collection struct {
+	ID    int
+	Name  string
+	Items []Item
+}
 
-//
+type Item struct {
+	ID    int
+	Image string
+	Title string
+}
+
+var DB *sql.DB
 
 func main() {
 	var err error
@@ -25,6 +36,14 @@ func main() {
 	CREATE TABLE IF NOT EXISTS collections (
 		id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL
+	);
+
+	CREATE TABLE IF NOT EXISTS items (
+		id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+		image TEXT,
+		title TEXT NOT NULL,
+		collection_id INTEGER,
+		FOREIGN KEY (collection_id) REFERENCES collections(id)
 	);`
 
 	_, err = DB.Exec(tLC)
@@ -34,32 +53,45 @@ func main() {
 
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/calluponthecreator", creationHandler)
+	http.HandleFunc("/calluponthecreator/create-item", createItemHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
 
-type Collection struct {
-	ID   int
-	Name string
-}
-
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := DB.Query("SELECT id, name FROM collections")
+	collectionsRows, err := DB.Query("SELECT id, name FROM collections")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
+	defer collectionsRows.Close()
 
 	var collections []Collection
 
-	for rows.Next() {
+	for collectionsRows.Next() {
 		var col Collection
-		if err := rows.Scan(&col.ID, &col.Name); err != nil {
+		if err := collectionsRows.Scan(&col.ID, &col.Name); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		itemsRows, err := DB.Query("SELECT id, image, title FROM items WHERE collection_id = ?", col.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer itemsRows.Close()
+
+		for itemsRows.Next() {
+			var item Item
+			if err := itemsRows.Scan(&item.ID, &item.Image, &item.Title); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			col.Items = append(col.Items, item)
+		}
+
 		collections = append(collections, col)
 	}
 
@@ -73,6 +105,21 @@ func creationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	name := r.FormValue("name")
 	_, err := DB.Exec("INSERT INTO collections(name) VALUES(?)", name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func createItemHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Error due to provision of fictional methodology", http.StatusMethodNotAllowed)
+	}
+	collectionID, _ := strconv.Atoi(r.FormValue("collection_id"))
+	image := r.FormValue("image")
+	title := r.FormValue("title")
+	_, err := DB.Exec("INSERT INTO items (image, title, collection_id) VALUES (?, ?, ?)", image, title, collectionID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

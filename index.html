@@ -10,10 +10,21 @@
     {{range .}}
     <div>
         <h3>{{.ID}} - {{.Name}}</h3>
+        {{range .Items}}
+            <div>
+                {{.ID}} - {{.Title}}
+            </div>
+        {{end}}
+        <form action="/calluponthecreator/create-item" method="POST">
+            <input type="hidden" name="collection_id" value="{{ .ID }}">
+            <input type="text" name="title" id="title" required>
+            <input type="text" name="image" id="image">
+            <input type="submit" value="Add an item">
+        </form>
     </div>
     {{end}}
     <form action="/calluponthecreator" method="POST">
-        <input type="text" name="name" id="name">
+        <input type="text" name="name" id="name" required>
         <input type="submit" value="Submit to me">
     </form>
 </body>

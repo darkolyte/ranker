@@ -1,4 +1,4 @@
-module darkolyte/ranker
+module github.com/darkolyte/ranker
 
 go 1.24.1
 
