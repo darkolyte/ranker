@@ -6,6 +6,15 @@
     <title>Document</title>
 </head>
 <body>
-    
+    <h1>Collectionz</h1>
+    {{range .}}
+    <div>
+        <h3>{{.ID}} - {{.Name}}</h3>
+    </div>
+    {{end}}
+    <form action="/calluponthecreator" method="POST">
+        <input type="text" name="name" id="name">
+        <input type="submit" value="Submit to me">
+    </form>
 </body>
 </html>
