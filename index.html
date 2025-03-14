@@ -4,25 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <style>
+        body {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: springgreen;
+        }
+        .collection-container {
+            background-color: palegreen;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 10px;
+            grid-auto-rows: 1fr;
+        }
+
+        .collection {
+            background-color: lightgreen;
+            box-sizing: border-box;
+            padding: 10px;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+    </style>
 </head>
 <body>
     <h1>Collectionz</h1>
-    {{range .}}
-    <div>
-        <h3>{{.ID}} - {{.Name}}</h3>
-        {{range .Items}}
-            <div>
-                {{.ID}} - {{.Title}}
+    <div class="collection-container">
+        {{range .}}
+            <div class="collection">
+                <a href="/collections/{{.ID}}">{{.Name}}</a>
+                <div>
+                    {{range .Items}}
+                        <div>
+                            > {{.Title}}
+                        </div>
+                    {{end}}
+                </div>
+                <form action="/calluponthecreator/create-item" method="POST">
+                    <input type="hidden" name="collection_id" value="{{ .ID }}">
+                    <input type="text" name="title" id="title" required>
+                    <input type="text" name="image" id="image">
+                    <input type="submit" value="Add an item">
+                </form>
             </div>
         {{end}}
-        <form action="/calluponthecreator/create-item" method="POST">
-            <input type="hidden" name="collection_id" value="{{ .ID }}">
-            <input type="text" name="title" id="title" required>
-            <input type="text" name="image" id="image">
-            <input type="submit" value="Add an item">
-        </form>
     </div>
-    {{end}}
     <form action="/calluponthecreator" method="POST">
         <input type="text" name="name" id="name" required>
         <input type="submit" value="Submit to me">

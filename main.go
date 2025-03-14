@@ -26,7 +26,7 @@ var DB *sql.DB
 
 func main() {
 	var err error
-	DB, err = sql.Open("sqlite", "file:test.db?mode=memory&cache=shared")
+	DB, err = sql.Open("sqlite", "test.db")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,6 +54,7 @@ func main() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/calluponthecreator", creationHandler)
 	http.HandleFunc("/calluponthecreator/create-item", createItemHandler)
+	http.HandleFunc("/collections/", collectionsHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
@@ -125,4 +126,8 @@ func createItemHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func collectionsHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/", http.StatusFound)
 }
