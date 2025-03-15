@@ -26,15 +26,17 @@ type Item struct {
 	Wins  int
 }
 
-var DB *sql.DB
+var tpl *template.Template
+
+var db *sql.DB
 
 func main() {
 	var err error
-	DB, err = sql.Open("sqlite", "test.db")
+	db, err = sql.Open("sqlite", "test.db")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer DB.Close()
+	defer db.Close()
 
 	tLC := `
 	CREATE TABLE IF NOT EXISTS collections (
@@ -50,10 +52,14 @@ func main() {
 		FOREIGN KEY (collection_id) REFERENCES collections(id)
 	);`
 
-	_, err = DB.Exec(tLC)
+	_, err = db.Exec(tLC)
 	if err != nil {
 		log.Fatalf("terror in creation of table: %q", err)
 	}
+
+	parseTemplates()
+
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
 
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/calluponthecreator", creationHandler)
@@ -64,8 +70,23 @@ func main() {
 
 }
 
+func parseTemplates() {
+	tmp := template.New("")
+
+	funcs := template.FuncMap{
+		"embed": func(name string, data any) template.HTML {
+			var out strings.Builder
+			if err := tmp.ExecuteTemplate(&out, name, data); err != nil {
+				log.Println(err)
+			}
+			return template.HTML(out.String())
+		}}
+
+	tpl = template.Must(tmp.Funcs(funcs).ParseGlob("tmpl/*.html"))
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	collectionsRows, err := DB.Query("SELECT id, name FROM collections")
+	collectionsRows, err := db.Query("SELECT id, name FROM collections")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -81,7 +102,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		itemsRows, err := DB.Query("SELECT id, image, title FROM items WHERE collection_id = ?", col.ID)
+		itemsRows, err := db.Query("SELECT id, image, title FROM items WHERE collection_id = ?", col.ID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -100,8 +121,17 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		collections = append(collections, col)
 	}
 
-	t, _ := template.ParseFiles("index.html") // skipped validation
-	t.Execute(w, collections)
+	// remove line
+	parseTemplates()
+
+	err = tpl.ExecuteTemplate(w, "base.html", map[string]any{
+		"Page": "index.html",
+		"Data": collections,
+	})
+	if err != nil {
+		log.Println("Template error:", err)
+		return
+	}
 }
 
 func creationHandler(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +139,7 @@ func creationHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Har har~ We differ in methodology but could we still be friends?", http.StatusMethodNotAllowed)
 	}
 	name := r.FormValue("name") // skipped validation
-	_, err := DB.Exec("INSERT INTO collections(name) VALUES(?)", name)
+	_, err := db.Exec("INSERT INTO collections(name) VALUES(?)", name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -121,10 +151,16 @@ func createItemHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Error due to provision of fictional methodology", http.StatusMethodNotAllowed)
 	}
-	collectionID, _ := strconv.Atoi(r.FormValue("collection_id")) // skipped validation
-	image := r.FormValue("image")                                 // skipped validation
-	title := r.FormValue("title")                                 // skipped validation
-	_, err := DB.Exec("INSERT INTO items (image, title, collection_id) VALUES (?, ?, ?)", image, title, collectionID)
+	collectionID, err := strconv.Atoi(r.FormValue("collection_id"))
+	if err != nil {
+		log.Print(collectionID)
+		http.Error(w, "Invalid collection ID", http.StatusBadRequest)
+		return
+	} // missing db call
+
+	image := r.FormValue("image")
+	title := r.FormValue("title")
+	_, err = db.Exec("INSERT INTO items (image, title, collection_id) VALUES (?, ?, ?)", image, title, collectionID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -138,12 +174,16 @@ func collectionsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	collectionID, _ := strconv.Atoi(r.URL.Path[len("/collections/"):]) // skipped validation
+	collectionID, err := strconv.Atoi(r.URL.Path[len("/collections/"):])
+	if err != nil {
+		http.Error(w, "Invalid collection ID", http.StatusBadRequest)
+		return
+	} // missing db call
 
 	var col Collection
-	_ = DB.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionID).Scan(&col.ID, &col.Name) // skipped validation
+	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionID).Scan(&col.ID, &col.Name) // skipped validation
 
-	itemRows, _ := DB.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionID) // skipped validation
+	itemRows, _ := db.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionID) // skipped validation
 
 	for itemRows.Next() {
 		var item Item
@@ -153,8 +193,17 @@ func collectionsHandler(w http.ResponseWriter, r *http.Request) {
 		col.Items = append(col.Items, item)
 	}
 
-	t, _ := template.ParseFiles("rank.html") // skippped validation
-	t.Execute(w, col)
+	// remove line
+	parseTemplates()
+
+	err = tpl.ExecuteTemplate(w, "base.html", map[string]any{
+		"Page": "rank.html",
+		"Data": col,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func collectionResultHandler(w http.ResponseWriter, r *http.Request) {
@@ -165,9 +214,14 @@ func collectionResultHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.Unmarshal([]byte(r.FormValue("scores")), &scores)
 
 	var res Collection
-	_ = DB.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionID).Scan(&res.ID, &res.Name)
+	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionID).Scan(&res.ID, &res.Name)
 
-	itemRows, _ := DB.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionID)
+	itemRows, err := db.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer itemRows.Close()
 
 	var items []Item
 
@@ -181,14 +235,23 @@ func collectionResultHandler(w http.ResponseWriter, r *http.Request) {
 
 		items = append(items, item)
 
-		sort.Slice(items, func(i, j int) bool {
-			return items[i].Wins > items[j].Wins
-		})
-
 	}
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Wins > items[j].Wins
+	})
 
 	res.Items = items
 
-	t, _ := template.ParseFiles("result.html")
-	t.Execute(w, res)
+	// remove line
+	parseTemplates()
+
+	err = tpl.ExecuteTemplate(w, "base.html", map[string]any{
+		"Page": "result.html",
+		"Data": res,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }

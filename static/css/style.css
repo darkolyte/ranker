@@ -1,0 +1,60 @@
+.abc {
+  display: none;
+}
+.result-form {
+  display: none;
+}
+
+.choice-holder {
+  overflow: hidden;
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
+}
+
+.choice {
+  flex: 1;
+  padding: 100px;
+  border: 1px solid black;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.choice:first-child {
+  border-right: 1px solid black;
+}
+
+.choice:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+.col-pg-body {
+  background-color: white;
+}
+
+.col-container {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 10px;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 10px;
+  grid-auto-rows: 1fr;
+}
+
+.col-card {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+
+  box-sizing: border-box;
+  padding: 10px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
