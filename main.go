@@ -61,7 +61,7 @@ func main() {
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static/"))))
 
-	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/calluponthecreator", creationHandler)
 	http.HandleFunc("/calluponthecreator/create-item", createItemHandler)
 	http.HandleFunc("/collections/", collectionsHandler)
@@ -85,7 +85,7 @@ func parseTemplates() {
 	tpl = template.Must(tmp.Funcs(funcs).ParseGlob("tmpl/*.html"))
 }
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
+func homeHandler(w http.ResponseWriter, r *http.Request) {
 	collectionsRows, err := db.Query("SELECT id, name FROM collections")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -125,7 +125,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	parseTemplates()
 
 	err = tpl.ExecuteTemplate(w, "base.html", map[string]any{
-		"Page": "index.html",
+		"Page": "home.html",
 		"Data": collections,
 	})
 	if err != nil {

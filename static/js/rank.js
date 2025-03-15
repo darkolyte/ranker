@@ -69,18 +69,19 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 left.style.transform = "translateX(250%)"
                 right.style.transform = "translateX(250%)"
 
-                processNextPair();
-
                setTimeout(() => {
 
                 left.style.transition = "none"
                 right.style.transition = "none"
 
-                left.style.backgroundColor = "white"
-                right.style.backgroundColor = "white"
+                left.style.backgroundColor = ""
+                right.style.backgroundColor = ""
 
                 left.style.transform = "translateX(-250%)"
                 right.style.transform = "translateX(-250%)"
+
+                left.innerHTML = ""
+                right.innerHTML = ""
 
                 setTimeout(() => {
                     left.style.transition = "all 500ms cubic-bezier(.48,.52,.24,.9)"
@@ -89,6 +90,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
                     left.style.transform = "translateX(0%)"
                     right.style.transform = "translateX(0%)"
 
+                    processNextPair();
                 }, 100)
            
                 }, 500);
