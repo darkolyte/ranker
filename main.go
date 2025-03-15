@@ -2,10 +2,13 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 
 	_ "modernc.org/sqlite"
 )
@@ -20,6 +23,7 @@ type Item struct {
 	ID    int
 	Image string
 	Title string
+	Wins  int
 }
 
 var DB *sql.DB
@@ -96,7 +100,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		collections = append(collections, col)
 	}
 
-	t, _ := template.ParseFiles("index.html")
+	t, _ := template.ParseFiles("index.html") // skipped validation
 	t.Execute(w, collections)
 }
 
@@ -104,7 +108,7 @@ func creationHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Har har~ We differ in methodology but could we still be friends?", http.StatusMethodNotAllowed)
 	}
-	name := r.FormValue("name")
+	name := r.FormValue("name") // skipped validation
 	_, err := DB.Exec("INSERT INTO collections(name) VALUES(?)", name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -117,9 +121,9 @@ func createItemHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Error due to provision of fictional methodology", http.StatusMethodNotAllowed)
 	}
-	collectionID, _ := strconv.Atoi(r.FormValue("collection_id"))
-	image := r.FormValue("image")
-	title := r.FormValue("title")
+	collectionID, _ := strconv.Atoi(r.FormValue("collection_id")) // skipped validation
+	image := r.FormValue("image")                                 // skipped validation
+	title := r.FormValue("title")                                 // skipped validation
 	_, err := DB.Exec("INSERT INTO items (image, title, collection_id) VALUES (?, ?, ?)", image, title, collectionID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -129,5 +133,62 @@ func createItemHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func collectionsHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/", http.StatusFound)
+	if strings.HasSuffix(r.URL.Path, "/result") {
+		collectionResultHandler(w, r)
+		return
+	}
+
+	collectionID, _ := strconv.Atoi(r.URL.Path[len("/collections/"):]) // skipped validation
+
+	var col Collection
+	_ = DB.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionID).Scan(&col.ID, &col.Name) // skipped validation
+
+	itemRows, _ := DB.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionID) // skipped validation
+
+	for itemRows.Next() {
+		var item Item
+		if err := itemRows.Scan(&item.ID, &item.Image, &item.Title); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		col.Items = append(col.Items, item)
+	}
+
+	t, _ := template.ParseFiles("rank.html") // skippped validation
+	t.Execute(w, col)
+}
+
+func collectionResultHandler(w http.ResponseWriter, r *http.Request) {
+	collectionID := strings.Split(r.URL.Path, "/")[2]
+
+	var scores map[string]int
+
+	_ = json.Unmarshal([]byte(r.FormValue("scores")), &scores)
+
+	var res Collection
+	_ = DB.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionID).Scan(&res.ID, &res.Name)
+
+	itemRows, _ := DB.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionID)
+
+	var items []Item
+
+	for itemRows.Next() {
+		var item Item
+		if err := itemRows.Scan(&item.ID, &item.Image, &item.Title); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		item.Wins = scores[strconv.Itoa(item.ID)]
+
+		items = append(items, item)
+
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].Wins > items[j].Wins
+		})
+
+	}
+
+	res.Items = items
+
+	t, _ := template.ParseFiles("result.html")
+	t.Execute(w, res)
 }

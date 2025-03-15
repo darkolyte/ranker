@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        window.addEventListener('DOMContentLoaded', (e) => {
+            let collection = document.getElementsByClassName("abc")
+
+            let pairs = []
+
+            for (i = 0; i < collection.length; i++) {
+                for (j = i; j < collection.length; j++) {
+                    if (i == j) continue
+                    pairs.push([collection[i].id, collection[j].id])
+                }
+            }
+
+            let left = document.getElementsByClassName("left")[0]
+            let right = document.getElementsByClassName("right")[0]
+
+            let scores = {}
+
+            function processNextPair() {
+                if (pairs.length === 0) {
+                    const form = document.getElementsByTagName("form")[0]
+                    const input = document.getElementsByTagName("input")[0]
+                    input.value = JSON.stringify(scores);
+                    form.submit()
+                    return;
+                }
+    
+                const pair = pairs[0];
+                pairs = pairs.slice(1);
+    
+                left.innerHTML = document.getElementById(pair[0]).innerHTML;
+                right.innerHTML = document.getElementById(pair[1]).innerHTML;
+    
+                const handleClick = (event) => {
+                    left.removeEventListener('click', handleClick);
+                    right.removeEventListener('click', handleClick);
+    
+                    const chosenId = event.target === left ? pair[0] : pair[1];
+
+                    scores[chosenId] = (scores[chosenId] || 0) + 1;
+                    console.log("User chose:", chosenId, "Scores:", scores);
+    
+                    processNextPair();
+                };
+    
+                left.addEventListener('click', handleClick);
+                right.addEventListener('click', handleClick);
+            }
+
+            processNextPair();
+        })
+    </script>
+    <style>
+        .abc {
+            display: none;
+        }
+        form {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    {{.Name}}
+    {{range .Items}}
+        <div class="abc" id="{{.ID}}">{{.Title}}</div>
+    {{end}}
+    <div class="left"></div>
+    <div class="right"></div>
+    <form action="/collections/{{.ID}}/result"><input type="hidden" name="scores"></form>
+</body>
+</html>
