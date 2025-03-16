@@ -40,17 +40,19 @@ func main() {
 
 	tLC := `
 	CREATE TABLE IF NOT EXISTS collections (
-		id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+		id INTEGER NOT NULL PRIMARY KEY,
 		name TEXT NOT NULL
 	);
 
 	CREATE TABLE IF NOT EXISTS items (
-		id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+		id INTEGER NOT NULL PRIMARY KEY,
 		image TEXT,
 		title TEXT NOT NULL,
+		wins INTEGER DEFAULT 0,
 		collection_id INTEGER,
-		FOREIGN KEY (collection_id) REFERENCES collections(id)
-	);`
+		FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+	);
+	`
 
 	_, err = db.Exec(tLC)
 	if err != nil {
@@ -66,9 +68,18 @@ func main() {
 	http.HandleFunc("/calluponthecreator/create-item", createItemHandler)
 	http.HandleFunc("/collections/", collectionsHandler)
 	http.HandleFunc("/banthisguy", deleteItemHandler)
+	http.HandleFunc("/reset/", resetHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
+}
+
+func resetHandler(w http.ResponseWriter, r *http.Request) {
+	collectionIdStr := strings.Split(r.URL.Path, "/")[2]
+	collectionId, _ := strconv.Atoi(collectionIdStr)
+
+	db.Exec("UPDATE items SET wins = 0 WHERE collection_id = ?", collectionId)
+	http.Redirect(w, r, "/"+collectionIdStr, http.StatusSeeOther)
 }
 
 func parseTemplates() {
@@ -231,12 +242,34 @@ func collectionResultHandler(w http.ResponseWriter, r *http.Request) {
 
 	_ = json.Unmarshal([]byte(r.FormValue("scores")), &scores)
 
-	var res Collection
-	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionId).Scan(&res.ID, &res.Name)
+	tx, err := db.Begin()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	defer tx.Rollback()
 
-	log.Printf(collectionId)
+	for itemIdStr, scoreWins := range scores {
+		itemId, _ := strconv.Atoi(itemIdStr)
 
-	itemRows, err := db.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionId)
+		tx.Exec(
+			"UPDATE items SET wins = wins + ?  WHERE id = ? AND collection_id = ?",
+			scoreWins,
+			itemId,
+			collectionId,
+		)
+
+	}
+	tx.Commit()
+
+	var Res struct {
+		ID     int
+		Name   string
+		User   []Item
+		Public []Item
+	}
+	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionId).Scan(&Res.ID, &Res.Name)
+
+	itemRows, err := db.Query("SELECT id, image, title, wins FROM items WHERE collection_id = ?", collectionId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -244,31 +277,37 @@ func collectionResultHandler(w http.ResponseWriter, r *http.Request) {
 	defer itemRows.Close()
 
 	var items []Item
+	var userItems []Item
 
 	for itemRows.Next() {
 		var item Item
-		if err := itemRows.Scan(&item.ID, &item.Image, &item.Title); err != nil {
+		if err := itemRows.Scan(&item.ID, &item.Image, &item.Title, &item.Wins); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
-		item.Wins = scores[strconv.Itoa(item.ID)]
-
 		items = append(items, item)
 
+		item.Wins = scores[strconv.Itoa(item.ID)]
+
+		userItems = append(userItems, item)
 	}
 
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].Wins > items[j].Wins
 	})
 
-	res.Items = items
+	sort.Slice(userItems, func(i, j int) bool {
+		return userItems[i].Wins > userItems[j].Wins
+	})
+
+	Res.Public, Res.User = items, userItems
 
 	// remove line
 	parseTemplates()
 
 	err = tpl.ExecuteTemplate(w, "base.html", map[string]any{
 		"Page": "result.html",
-		"Data": res,
+		"Data": Res,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

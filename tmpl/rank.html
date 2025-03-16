@@ -1,10 +1,11 @@
-<h1>{{.Data.Name}}</h1>
+<h1 style="text-align: center;">{{.Data.Name}}</h1>
 {{range .Data.Items}}
     <div class="items" id="{{.ID}}">{{.Title}}</div>
 {{end}}
 
 <div class="choice-holder">
     <div class="choice" id="left"></div>
+    <h2>OR</h2>
     <div class="choice" id="right"></div>
 </div>
 <form id="result" class="result-form" action="/collections/{{.Data.ID}}/result"><input id="scores" type="hidden" name="scores"></form>

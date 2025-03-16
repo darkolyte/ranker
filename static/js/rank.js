@@ -51,8 +51,8 @@ window.addEventListener('DOMContentLoaded', (e) => {
 
             setTimeout(() => {
                 
-                left.style.transition = "all 500ms cubic-bezier(.16,.8,.19,.98)"
-                right.style.transition = "all 500ms cubic-bezier(.16,.8,.19,.98)"
+                left.style.transition = "all 500ms cubic-bezier(0.4, 0, 1, 1)"
+                right.style.transition = "all 500ms cubic-bezier(0.4, 0, 1, 1)"
 
                 left.style.transform = "translateX(250%)"
                 right.style.transform = "translateX(250%)"
@@ -72,8 +72,8 @@ window.addEventListener('DOMContentLoaded', (e) => {
                 right.innerHTML = ""
 
                 setTimeout(() => {
-                    left.style.transition = "all 500ms cubic-bezier(.48,.52,.24,.9)"
-                    right.style.transition = "all 500ms cubic-bezier(.48,.52,.24,.9)"
+                    left.style.transition = "all 500ms cubic-bezier(0, 0, 0.2, 1)"
+                    right.style.transition = "all 500ms cubic-bezier(0, 0, 0.2, 1)"
                 
                     left.style.transform = "translateX(0%)"
                     right.style.transform = "translateX(0%)"
@@ -83,7 +83,7 @@ window.addEventListener('DOMContentLoaded', (e) => {
            
                 }, 500);
                 
-            }, 500)
+            }, 300)
             
         };
 

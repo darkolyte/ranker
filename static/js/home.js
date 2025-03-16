@@ -43,11 +43,25 @@ window.addEventListener('DOMContentLoaded', (e) => {
                     selectedCollection.style.display = "none"
                     detailPanes[i].style.display = "flex"
                     selectedCollection = detailPanes[i]
+                    updateURL(parseInt(selectedCollection.dataset.id))
                 }
             }
         })
     }
     
+    function updateURL(newId) {
+        let urlParts =  window.location.pathname.split("/")
 
+        while (urlParts.length != 2) {
+            urlParts.pop()
+        }
+
+        urlParts[1] = newId
+
+        const newUrl = urlParts.join("/")
+
+        // window.history.replaceState(null, "", newUrl)
+        window.history.pushState(null, "", newUrl)
+    }
 
 })
