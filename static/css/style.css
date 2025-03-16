@@ -1,4 +1,4 @@
-.abc {
+.items {
   display: none;
 }
 .result-form {
@@ -34,8 +34,6 @@
 body {
   font-family: 'Poppins', sans-serif;
   background: rgb(238, 238, 238);
-
-  transition: all 3s ease-in;
 }
 
 body:before {
@@ -59,7 +57,6 @@ body:before {
 
 .col-container {
   background-color: rgba(255, 255, 255, 0.3);
-  height: 100%;
   border-radius: 8px;
   padding: 10px;
 
@@ -69,6 +66,10 @@ body:before {
   grid-auto-rows: 1fr;
 
   /* box-shadow: 0px 3px 15px rgba(0, 0, 0, 0.2); */
+}
+
+.col-details {
+  background-color: grey;
 }
 
 /* old-col-card
@@ -94,6 +95,7 @@ body:before {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  transition: all 0.2s ease-in;
 
   gap: 10px;
 }
@@ -108,21 +110,27 @@ body:before {
   border: none;
   border-radius: 6px;
 
-  font-size: 0.96rem;
+  /* font-size: 0.96rem; */
+  font-size: 16px;
   font-weight: bold;
   letter-spacing: 1.15px;
 
-  padding: 4px 8px;
-  background-color: rgba(117, 117, 117, 0.2);
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.075);
+  transition: all 0.1s ease-in;
 }
 
 .col-card button:hover {
-  color: white;
-  background-color: rgba(0, 0, 0, 0.15);
+  transform: scale(1.1);
 }
 
 .col-card svg {
   opacity: 0.2;
+}
+
+.col-add:hover {
+  transform: scale(1.025);
+  background-color: rgba(0, 0, 0, 0.045);
 }
 
 .col-nav {
@@ -133,6 +141,7 @@ body:before {
 .col-nav button {
   font-size: 1.5rem;
   font-weight: bold;
+  transition: all 0.3s ease-in;
 
   background-color: rgba(0, 0, 0, 0.05);
   border: none;
@@ -160,4 +169,59 @@ body:before {
 
 .col-sh {
   filter: drop-shadow(0px 0px 6px rgba(0, 0, 0, 0.2));
+
+  display: flex;
+  flex-direction: column;
+}
+
+.mod-bg {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.mod-card {
+  background-color: rgba(254, 254, 254, 1);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border: 4px solid dimgray;
+  border-radius: 8px;
+  width: 80%;
+
+  display: flex;
+  animation-name: animateMod;
+  animation-duration: 0.3s;
+}
+
+.mod-card input {
+  background-color: inherit;
+  padding: 20px;
+  border: none;
+  flex: 1;
+  border-radius: 12px;
+
+  font-size: 1.3rem;
+}
+
+.mod-card input:focus {
+  outline: none;
+}
+
+@keyframes animateMod {
+  from {
+    top: 100%;
+    opacity: 0;
+  }
+  to {
+    top: 50%;
+    opacity: 1;
+  }
 }

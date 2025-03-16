@@ -125,8 +125,9 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	parseTemplates()
 
 	err = tpl.ExecuteTemplate(w, "base.html", map[string]any{
-		"Page": "home.html",
-		"Data": collections,
+		"Page":   "home.html",
+		"Script": "/static/js/home.js",
+		"Data":   collections,
 	})
 	if err != nil {
 		log.Println("Template error:", err)
@@ -197,8 +198,9 @@ func collectionsHandler(w http.ResponseWriter, r *http.Request) {
 	parseTemplates()
 
 	err = tpl.ExecuteTemplate(w, "base.html", map[string]any{
-		"Page": "rank.html",
-		"Data": col,
+		"Page":   "rank.html",
+		"Script": "/static/js/rank.js",
+		"Data":   col,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
