@@ -65,6 +65,7 @@ func main() {
 	http.HandleFunc("/calluponthecreator", creationHandler)
 	http.HandleFunc("/calluponthecreator/create-item", createItemHandler)
 	http.HandleFunc("/collections/", collectionsHandler)
+	http.HandleFunc("/banthisguy", deleteItemHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
@@ -152,39 +153,54 @@ func createItemHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Error due to provision of fictional methodology", http.StatusMethodNotAllowed)
 	}
-	collectionID, err := strconv.Atoi(r.FormValue("collection_id"))
+	collectionIdString := r.FormValue("collection_id")
+	collectionId, err := strconv.Atoi(collectionIdString)
 	if err != nil {
-		log.Print(collectionID)
+		log.Print(collectionId)
 		http.Error(w, "Invalid collection ID", http.StatusBadRequest)
 		return
 	} // missing db call
 
 	image := r.FormValue("image")
 	title := r.FormValue("title")
-	_, err = db.Exec("INSERT INTO items (image, title, collection_id) VALUES (?, ?, ?)", image, title, collectionID)
+
+	_, err = db.Exec("INSERT INTO items (image, title, collection_id) VALUES (?, ?, ?)", image, title, collectionId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/"+collectionIdString, http.StatusSeeOther)
+}
+
+func deleteItemHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Not very Methodic", http.StatusMethodNotAllowed)
+	}
+
+	collectionId := r.FormValue("collection_id") // should get from url
+	itemId, _ := strconv.Atoi(r.FormValue("item_id"))
+
+	db.Exec("DELETE FROM items WHERE id = ?", itemId) // validation
+
+	http.Redirect(w, r, "/"+collectionId, http.StatusSeeOther)
 }
 
 func collectionsHandler(w http.ResponseWriter, r *http.Request) {
-	if strings.HasSuffix(r.URL.Path, "/result") {
+	if strings.Split(r.URL.Path, "/")[3] == "result" {
 		collectionResultHandler(w, r)
 		return
 	}
 
-	collectionID, err := strconv.Atoi(r.URL.Path[len("/collections/"):])
+	collectionId, err := strconv.Atoi(strings.Split(r.URL.Path, "/")[2])
 	if err != nil {
 		http.Error(w, "Invalid collection ID", http.StatusBadRequest)
 		return
 	} // missing db call
 
 	var col Collection
-	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionID).Scan(&col.ID, &col.Name) // skipped validation
+	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionId).Scan(&col.ID, &col.Name) // skipped validation
 
-	itemRows, _ := db.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionID) // skipped validation
+	itemRows, _ := db.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionId) // skipped validation
 
 	for itemRows.Next() {
 		var item Item
@@ -209,16 +225,18 @@ func collectionsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func collectionResultHandler(w http.ResponseWriter, r *http.Request) {
-	collectionID := strings.Split(r.URL.Path, "/")[2]
+	collectionId := strings.Split(r.URL.Path, "/")[2]
 
 	var scores map[string]int
 
 	_ = json.Unmarshal([]byte(r.FormValue("scores")), &scores)
 
 	var res Collection
-	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionID).Scan(&res.ID, &res.Name)
+	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionId).Scan(&res.ID, &res.Name)
 
-	itemRows, err := db.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionID)
+	log.Printf(collectionId)
+
+	itemRows, err := db.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

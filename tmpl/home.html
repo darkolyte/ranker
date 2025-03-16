@@ -1,35 +1,68 @@
 <div class="col-sh">
-    <div class="col-nav">
-        <button>
-            Browse
-        </button>
-        <button>
-            Saved
-        </button>
-        <button>
-            Library
-        </button>
-    </div>
-
-
-    <div class="col-container">
-        {{range .Data}}
-            <div class="col-card">
-                <p class="col-card-title">{{.Name}}</p>
-                <form action="/collections/{{.ID}}" method="GET">
-                    <button>Start Ranking</button>
-                </form>
-            </div>
-        {{end}}
-        <div class="col-card col-add" id="addCol">
-            <svg height="80px" width="80px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 	 viewBox="0 0 309.059 309.059" xml:space="preserve"><g>	<g>		<path style="fill:#010002;" d="M280.71,126.181h-97.822V28.338C182.889,12.711,170.172,0,154.529,0S126.17,12.711,126.17,28.338			v97.843H28.359C12.722,126.181,0,138.903,0,154.529c0,15.621,12.717,28.338,28.359,28.338h97.811v97.843			c0,15.632,12.711,28.348,28.359,28.348c15.643,0,28.359-12.717,28.359-28.348v-97.843h97.822			c15.632,0,28.348-12.717,28.348-28.338C309.059,138.903,296.342,126.181,280.71,126.181z"/>	</g></g></svg>
+    <div>
+        <div class="col-nav">
+            <button>
+                Browse
+            </button>
+            <button>
+                Saved
+            </button>
+            <button>
+                Library
+            </button>
         </div>
-    </div>
+
+
+        <div class="col-container">
+            {{range .Data}}
+                <div data-id="{{.ID}}" class="col-card col">
+                    <p class="col-card-title">{{.Name}}</p>
+                </div>
+            {{end}}
+            <div class="col-card col-add" id="addCol">
+                <svg height="80px" width="80px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 	 viewBox="0 0 309.059 309.059" xml:space="preserve"><g>	<g>		<path style="fill:#010002;" d="M280.71,126.181h-97.822V28.338C182.889,12.711,170.172,0,154.529,0S126.17,12.711,126.17,28.338			v97.843H28.359C12.722,126.181,0,138.903,0,154.529c0,15.621,12.717,28.338,28.359,28.338h97.811v97.843			c0,15.632,12.711,28.348,28.359,28.348c15.643,0,28.359-12.717,28.359-28.348v-97.843h97.822			c15.632,0,28.348-12.717,28.348-28.338C309.059,138.903,296.342,126.181,280.71,126.181z"/>	</g></g></svg>
+            </div>
+        </div>
+    </div> 
 
     {{range .Data}}
-    <div class="col-details">
-        <h3>{{.Name}}</h3>
-    </div>
+        <div data-id="{{.ID}}" class="col-details">
+            <h3>
+                {{.Name}}
+                <span>- Details</span>
+            </h3>
+            <form action="/collections/{{.ID}}/" method="GET">
+                <button>Start Ranking</button>
+            </form>
+            <div class="col-div">
+                <div class="col-items">
+                    {{ $colID := .ID}}
+                    {{range .Items}}
+                    <div style="display: flex; justify-content: space-between; gap: 10px;">
+                        <p>> {{.Title}}</p>
+                        <form style="display: contents" action="/banthisguy" method="POST">
+                            <input type="hidden" name="collection_id" value="{{$colID}}">
+                            <input type="hidden" name="item_id" value="{{ .ID }}">
+                            <button style="padding: 6px 2px 4px 3px; height: min-content; align-self: center; background-color: rgba(255, 0, 0, 0.205);"><svg fill="#000000" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 	 width="20px" height="20px" viewBox="0 0 485 485" xml:space="preserve"> <g> 	<g> 		<rect x="67.224" width="350.535" height="71.81"/> 		<path d="M417.776,92.829H67.237V485h350.537V92.829H417.776z M165.402,431.447h-28.362V146.383h28.362V431.447z M256.689,431.447 			h-28.363V146.383h28.363V431.447z M347.97,431.447h-28.361V146.383h28.361V431.447z"/> 	</g> </g> </svg></button>
+                        </form>
+                    </div>
+                    {{end}}
+                </div>
+                <!-- <div class="col-info">
+                    <image src="https://st3.depositphotos.com/17828278/33150/v/450/depositphotos_331503262-stock-illustration-no-image-vector-symbol-missing.jpg"></image>
+                    <button></button>
+                </div>   -->
+            </div>
+
+            <form action="/calluponthecreator/create-item" method="POST">
+                <div class="item-form">
+                    <input type="hidden" name="collection_id" value="{{ .ID }}">
+                    <input type="hidden" name="image" id="image" value="">
+                    <input required name="title" type="text" placeholder="Enter item name">
+                    <input type="submit">
+                </div>
+            </form>
+        </div>
     {{end}}
 </div>
 

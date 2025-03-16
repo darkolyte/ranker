@@ -55,6 +55,15 @@ body:before {
   background-color: white;
 }
 
+.col-sh {
+  filter: drop-shadow(0px 0px 6px rgba(0, 0, 0, 0.2));
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+}
+
 .col-container {
   background-color: rgba(255, 255, 255, 0.3);
   border-radius: 8px;
@@ -69,7 +78,57 @@ body:before {
 }
 
 .col-details {
-  background-color: grey;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  flex: 1;
+
+  padding: 0px 25px 25px 25px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.col-div {
+  display: flex;
+  justify-content: space-between;
+
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.025);
+  border-radius: 8px;
+}
+
+.col-div img {
+  width: 200px;
+}
+
+.item-form input {
+  border-radius: 12px;
+  border: none;
+  font-size: 0.96rem;
+  padding: 8px;
+  transition: all 0.2s ease-in;
+}
+.item-form input[type='text'] {
+  flex: 1;
+  outline: none;
+  border: 2px solid darkgrey;
+  background-color: rgba(255, 255, 255, 0.7);
+}
+.item-form input[type='text']:focus {
+  border-color: dimgray;
+}
+.item-form input[type='submit']:hover {
+  transform: scale(1.1);
+}
+
+.item-form {
+  display: flex;
+  gap: 10px;
+}
+
+h3 span {
+  color: dimgray;
+  font-size: 0.96rem;
 }
 
 /* old-col-card
@@ -96,6 +155,8 @@ body:before {
   justify-content: center;
   align-items: center;
   transition: all 0.2s ease-in;
+  overflow: hidden;
+  cursor: pointer;
 
   gap: 10px;
 }
@@ -106,7 +167,7 @@ body:before {
   font-size: 1.3rem;
 }
 
-.col-card button {
+.col-details button {
   border: none;
   border-radius: 6px;
 
@@ -120,7 +181,7 @@ body:before {
   transition: all 0.1s ease-in;
 }
 
-.col-card button:hover {
+.col-details button:hover {
   transform: scale(1.1);
 }
 
@@ -128,7 +189,7 @@ body:before {
   opacity: 0.2;
 }
 
-.col-add:hover {
+.col-card:hover {
   transform: scale(1.025);
   background-color: rgba(0, 0, 0, 0.045);
 }
@@ -166,12 +227,8 @@ body:before {
 .col-nav :last-child {
   border-top-right-radius: 8px;
 }
-
-.col-sh {
-  filter: drop-shadow(0px 0px 6px rgba(0, 0, 0, 0.2));
-
-  display: flex;
-  flex-direction: column;
+.col p {
+  pointer-events: none;
 }
 
 .mod-bg {
