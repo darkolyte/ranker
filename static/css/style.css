@@ -5,6 +5,12 @@
   display: none;
 }
 
+.rank-pg {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .choice-holder {
   overflow: hidden;
   display: flex;
@@ -38,10 +44,18 @@
 
 /* New World */
 
+:root {
+  --page-bg: rgb(228, 228, 228);
+  --card-bg: rgba(255, 255, 255, 0.4);
+  --card-fg: rgba(0, 0, 0, 0.075);
+  --card-fg-hover: rgba(0, 0, 0, 0.12);
+}
+
 body,
 html {
   margin: 0;
   height: 100%;
+  scrollbar-gutter: stable both-edges;
 }
 
 * {
@@ -50,9 +64,7 @@ html {
 
 body {
   font-family: 'Poppins', sans-serif;
-  background: rgb(228, 228, 228);
-  display: flex;
-  flex-direction: column;
+  background: var(--page-bg);
 }
 
 body:before {
@@ -61,10 +73,10 @@ body:before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 182px;
-  opacity: 0.12;
+  opacity: 0.28;
   top: 0;
   left: 0;
-  position: absolute;
+  position: fixed;
   width: 100%;
   height: 100%;
   pointer-events: none;
@@ -82,7 +94,7 @@ body:before {
 }
 
 .col-container {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--card-bg);
   border-radius: 8px;
   border-top-left-radius: 0%;
   padding: 10px;
@@ -103,7 +115,7 @@ body:before {
   flex-direction: column;
   gap: 10px;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--card-bg);
 }
 
 .col-div {
@@ -111,7 +123,7 @@ body:before {
   justify-content: space-between;
 
   padding: 12px;
-  background-color: rgba(0, 0, 0, 0.025);
+  background-color: var(--card-fg);
   border-radius: 8px;
 }
 
@@ -156,10 +168,14 @@ body:before {
   flex: 1;
   outline: none;
   border: 2px solid darkgrey;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: var(--card-bg);
 }
 .item-form input[type='text']:focus {
   border-color: dimgray;
+}
+.item-form input[type='submit'] {
+  background-color: var(--card-fg);
+  font-weight: bold;
 }
 .item-form input[type='submit']:hover {
   transform: scale(1.1);
@@ -178,7 +194,7 @@ h3 span {
 .col-card {
   height: 200px;
 
-  background-color: rgba(0, 0, 0, 0.025);
+  background-color: var(--card-fg);
   border-radius: 8px;
 
   display: flex;
@@ -186,6 +202,8 @@ h3 span {
   justify-content: center;
   align-items: center;
   transition: all 0.2s ease-in;
+  transition-property: transform, background-color;
+  border: 4px solid transparent;
   overflow: hidden;
   cursor: pointer;
 
@@ -208,12 +226,12 @@ h3 span {
   letter-spacing: 1.15px;
 
   padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.075);
+  background: var(--card-fg);
   transition: all 0.1s ease-in;
 }
 
 .col-details button:hover {
-  transform: scale(1.1);
+  transform: scale(1.025);
 }
 
 .col-card svg {
@@ -222,7 +240,7 @@ h3 span {
 
 .col-card:hover {
   transform: scale(1.025);
-  background-color: rgba(0, 0, 0, 0.045);
+  background-color: var(--card-fg-hover);
 }
 
 .col-nav {
@@ -233,26 +251,27 @@ h3 span {
 .col-nav button {
   font-size: 1.5rem;
   font-weight: bold;
-  transition: all 0.3s ease-in;
+  transition: all 0.1s ease-in;
 
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--card-fg);
   border: none;
   padding: 12px;
 }
 
 .col-nav button:hover {
-  color: white;
-  background-color: rgba(0, 0, 0, 0.15);
+  letter-spacing: 8px;
+  background-color: var(--card-fg-hover);
+  cursor: context-menu;
 }
 
 .col-nav :first-child {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: var(--card-bg);
   border-top-left-radius: 8px;
 }
 
 .col-nav :first-child:hover {
-  color: black;
-  background-color: rgba(255, 255, 255, 0.3);
+  letter-spacing: normal;
+  background-color: var(--card-bg);
 }
 
 .col-nav :last-child {
@@ -312,4 +331,18 @@ h3 span {
     top: 50%;
     opacity: 1;
   }
+}
+
+form {
+  display: contents;
+}
+
+button.rb {
+  background-color: rgba(255, 208, 0, 0.48);
+  color: rgb(80, 65, 0);
+}
+
+button.delb {
+  background-color: rgba(220, 0, 0, 0.4);
+  color: rgb(80, 0, 0);
 }

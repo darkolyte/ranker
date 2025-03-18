@@ -18,10 +18,12 @@ window.addEventListener('DOMContentLoaded', (e) => {
     let selectedCollection = null
 
     let detailPanes = document.getElementsByClassName("col-details")
+    let collections = document.getElementsByClassName("col")
 
     for (i = 0; i < detailPanes.length; i ++) {
         if (cId === detailPanes[i].dataset.id) {
             selectedCollection = detailPanes[i]
+            collections[i].style.border = "4px solid dimgray"
         } else {
             detailPanes[i].style.display = "none"
         }
@@ -30,25 +32,29 @@ window.addEventListener('DOMContentLoaded', (e) => {
     if (selectedCollection === null) {
         selectedCollection = detailPanes[0]
         selectedCollection.style.display = "flex"
-
+        collections[0].style.border = "4px solid dimgray"
     }
-
-    let collections = document.getElementsByClassName("col")
 
     for (i = 0; i < collections.length; i ++) {
         collections[i].addEventListener('click', (e) => {
-
-            for (i = 0; i < detailPanes.length; i ++) {
-                if (detailPanes[i].dataset.id === e.target.dataset.id) {
+            e.target.style.border = "4px solid dimgray"
+            for (j = 0; j < detailPanes.length; j++) {
+                if (detailPanes[j].dataset.id === e.target.dataset.id) {
                     selectedCollection.style.display = "none"
-                    detailPanes[i].style.display = "flex"
-                    selectedCollection = detailPanes[i]
-                    updateURL(parseInt(selectedCollection.dataset.id))
+                    selectedCollection = detailPanes[j]
+                    // window.scroll({
+                    //     top: selectedCollection.getBoundingClientRect().top + window.scrollY,
+                    //     behavior: "smooth"
+                    // })
+                } else {
+                    collections[j].style.border = "4px solid transparent"
                 }
             }
+            selectedCollection.style.display = "flex"
+            updateURL(parseInt(selectedCollection.dataset.id))
         })
     }
-    
+
     function updateURL(newId) {
         let urlParts =  window.location.pathname.split("/")
 

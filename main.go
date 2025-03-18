@@ -14,36 +14,29 @@ import (
 )
 
 type Collection struct {
-	ID    int
+	Id    int
 	Name  string
 	Items []Item
 }
 
 type Item struct {
-	ID    int
+	Id    int
 	Image string
 	Title string
 	Wins  int
 }
 
 var tpl *template.Template
-
 var db *sql.DB
 
-func main() {
-	var err error
-	db, err = sql.Open("sqlite", "test.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+// var validPath = regexp.MustCompile(`^/(edit|save|view)/([a-zA-Z0-9]+)(\?.*)?$`)
 
-	tLC := `
+func initDB() {
+	const setupQuery = `
 	CREATE TABLE IF NOT EXISTS collections (
 		id INTEGER NOT NULL PRIMARY KEY,
 		name TEXT NOT NULL
 	);
-
 	CREATE TABLE IF NOT EXISTS items (
 		id INTEGER NOT NULL PRIMARY KEY,
 		image TEXT,
@@ -51,12 +44,44 @@ func main() {
 		wins INTEGER DEFAULT 0,
 		collection_id INTEGER,
 		FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
-	);
-	`
+	);`
 
-	_, err = db.Exec(tLC)
+	var err error
+	db, err = sql.Open("sqlite", "test.db")
 	if err != nil {
-		log.Fatalf("terror in creation of table: %q", err)
+		log.Fatalf("initDB: %v", err)
+	}
+
+	_, err = db.Exec(setupQuery)
+	if err != nil {
+		log.Fatalf("initDB: %v", err)
+	}
+}
+
+func parseTemplates() {
+	tmp := template.New("")
+
+	funcs := template.FuncMap{
+		"embed": func(name string, data any) template.HTML {
+			var out strings.Builder
+			if err := tmp.ExecuteTemplate(&out, name, data); err != nil {
+				log.Fatalf("parseTemplates: %v", err)
+			}
+			return template.HTML(out.String())
+		}}
+
+	tpl = template.Must(tmp.Funcs(funcs).ParseGlob("tmpl/*.html"))
+}
+
+// match the regexp
+
+func main() {
+	initDB()
+	defer db.Close()
+
+	err := db.Ping()
+	if err != nil {
+		log.Fatalf("Cannot connect to database: %v", err)
 	}
 
 	parseTemplates()
@@ -69,9 +94,17 @@ func main() {
 	http.HandleFunc("/collections/", collectionsHandler)
 	http.HandleFunc("/banthisguy", deleteItemHandler)
 	http.HandleFunc("/reset/", resetHandler)
+	http.HandleFunc("/delether", demColHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
+}
+
+func demColHandler(w http.ResponseWriter, r *http.Request) {
+	collectionId, _ := strconv.Atoi(r.FormValue("collection_id"))
+	db.Exec("DELETE FROM collections WHERE id = ?", collectionId)
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func resetHandler(w http.ResponseWriter, r *http.Request) {
@@ -80,21 +113,6 @@ func resetHandler(w http.ResponseWriter, r *http.Request) {
 
 	db.Exec("UPDATE items SET wins = 0 WHERE collection_id = ?", collectionId)
 	http.Redirect(w, r, "/"+collectionIdStr, http.StatusSeeOther)
-}
-
-func parseTemplates() {
-	tmp := template.New("")
-
-	funcs := template.FuncMap{
-		"embed": func(name string, data any) template.HTML {
-			var out strings.Builder
-			if err := tmp.ExecuteTemplate(&out, name, data); err != nil {
-				log.Println(err)
-			}
-			return template.HTML(out.String())
-		}}
-
-	tpl = template.Must(tmp.Funcs(funcs).ParseGlob("tmpl/*.html"))
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
@@ -109,12 +127,12 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 	for collectionsRows.Next() {
 		var col Collection
-		if err := collectionsRows.Scan(&col.ID, &col.Name); err != nil {
+		if err := collectionsRows.Scan(&col.Id, &col.Name); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		itemsRows, err := db.Query("SELECT id, image, title FROM items WHERE collection_id = ?", col.ID)
+		itemsRows, err := db.Query("SELECT id, image, title FROM items WHERE collection_id = ?", col.Id)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -123,7 +141,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 		for itemsRows.Next() {
 			var item Item
-			if err := itemsRows.Scan(&item.ID, &item.Image, &item.Title); err != nil {
+			if err := itemsRows.Scan(&item.Id, &item.Image, &item.Title); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -152,12 +170,13 @@ func creationHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Har har~ We differ in methodology but could we still be friends?", http.StatusMethodNotAllowed)
 	}
 	name := r.FormValue("name") // skipped validation
-	_, err := db.Exec("INSERT INTO collections(name) VALUES(?)", name)
+	var id int
+	err := db.QueryRow("INSERT INTO collections(name) VALUES(?) RETURNING id", name).Scan(&id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/"+strconv.Itoa(id), http.StatusSeeOther)
 }
 
 func createItemHandler(w http.ResponseWriter, r *http.Request) {
@@ -209,13 +228,13 @@ func collectionsHandler(w http.ResponseWriter, r *http.Request) {
 	} // missing db call
 
 	var col Collection
-	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionId).Scan(&col.ID, &col.Name) // skipped validation
+	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionId).Scan(&col.Id, &col.Name) // skipped validation
 
 	itemRows, _ := db.Query("SELECT id, image, title FROM items WHERE collection_id = ?", collectionId) // skipped validation
 
 	for itemRows.Next() {
 		var item Item
-		if err := itemRows.Scan(&item.ID, &item.Image, &item.Title); err != nil {
+		if err := itemRows.Scan(&item.Id, &item.Image, &item.Title); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		col.Items = append(col.Items, item)
@@ -262,12 +281,12 @@ func collectionResultHandler(w http.ResponseWriter, r *http.Request) {
 	tx.Commit()
 
 	var Res struct {
-		ID     int
+		Id     int
 		Name   string
 		User   []Item
 		Public []Item
 	}
-	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionId).Scan(&Res.ID, &Res.Name)
+	_ = db.QueryRow("SELECT id, name FROM collections WHERE id = ?", collectionId).Scan(&Res.Id, &Res.Name)
 
 	itemRows, err := db.Query("SELECT id, image, title, wins FROM items WHERE collection_id = ?", collectionId)
 	if err != nil {
@@ -281,13 +300,13 @@ func collectionResultHandler(w http.ResponseWriter, r *http.Request) {
 
 	for itemRows.Next() {
 		var item Item
-		if err := itemRows.Scan(&item.ID, &item.Image, &item.Title, &item.Wins); err != nil {
+		if err := itemRows.Scan(&item.Id, &item.Image, &item.Title, &item.Wins); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
 		items = append(items, item)
 
-		item.Wins = scores[strconv.Itoa(item.ID)]
+		item.Wins = scores[strconv.Itoa(item.Id)]
 
 		userItems = append(userItems, item)
 	}
