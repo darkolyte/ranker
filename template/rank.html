@@ -1,1 +1,22 @@
-{{.}}
+<div class="content">
+    <div class="card matchup">
+        <form method="POST" action="/rank/update">
+            <input type="hidden" name="collection_id" value="{{.CollectionId}}">
+            {{with index .Pair 0}}
+                <input type="hidden" name="first_id" value="{{.Id}}">
+                <button class="card" type="submit" name="winner_id" value="{{.Id}}">
+                    {{.Name}}
+                </button>
+            {{end}}
+
+            <p>OR</p>
+
+            {{with index .Pair 1}}
+                <input type="hidden" name="second_id" value="{{.Id}}">
+                <button class="card" type="submit" name="winner_id" value="{{.Id}}">
+                    {{.Name}}
+                </button>
+            {{end}}
+        </form>
+    </div>
+</div>
