@@ -1,70 +1,28 @@
-.items {
-  display: none;
-}
-.result-form {
-  display: none;
-}
-
-.rank-pg {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.choice-holder {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  justify-content: space-around;
-  gap: 8px;
-
-  padding: 18px;
-  text-align: center;
-}
-
-.choice {
-  flex: 1;
-  border: 1px solid black;
-  border-radius: 8px;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-}
-
-.choice:first-child {
-  border-right: 1px solid black;
-}
-
-.choice:hover {
-  background: rgba(0, 0, 0, 0.1);
-}
-
-/* New World */
+/* Shared */
 
 :root {
   --page-bg: rgb(228, 228, 228);
-  --card-bg: rgba(255, 255, 255, 0.4);
+
+  --card-bg: rgba(255, 255, 255, 0.3);
   --card-fg: rgba(0, 0, 0, 0.075);
   --card-fg-hover: rgba(0, 0, 0, 0.12);
+}
+
+* {
+  margin: 0;
+  padding: 0;
 }
 
 body,
 html {
   margin: 0;
   height: 100%;
-  scrollbar-gutter: stable both-edges;
-}
-
-* {
-  margin: 0;
 }
 
 body {
   font-family: 'Poppins', sans-serif;
   background: var(--page-bg);
+  overflow: hidden;
 }
 
 body:before {
@@ -82,267 +40,59 @@ body:before {
   pointer-events: none;
 }
 
-.col-content {
-  filter: none;
+form {
+  display: contents;
+}
 
+.content {
   display: flex;
   flex-direction: column;
 
-  gap: 12px;
-
-  padding: 12px;
+  padding: 8px;
 }
 
-.col-container {
+.card {
   background-color: var(--card-bg);
   border-radius: 8px;
-  border-top-left-radius: 0%;
-  padding: 10px;
+  padding: 8px;
+}
 
+.card .card {
+  background-color: var(--card-fg);
+  padding: 0px;
+}
+
+/* Home */
+
+.collections {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 10px;
   grid-auto-rows: 1fr;
 }
 
-.col-details {
-  border-radius: 8px;
-  flex: 1;
-
-  padding: 25px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  justify-content: center;
-  background-color: var(--card-bg);
-}
-
-.col-div {
-  display: flex;
-  justify-content: space-between;
-
-  padding: 12px;
-  background-color: var(--card-fg);
-  border-radius: 8px;
-}
-
-.col-div img {
-  width: 200px;
-}
-
-.col-details button.del-btn {
-  height: min-content;
-  align-self: center;
-  background-color: rgba(255, 0, 0, 0.205);
-  transform: scale(0.9);
-}
-
-.col-details button.del-btn:hover {
-  background-color: rgba(255, 0, 0, 0.505);
-}
-
-.col-items {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-
-  gap: 12px;
-}
-
-.col-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.item-form input {
-  border-radius: 12px;
-  border: none;
-  font-size: 0.96rem;
-  padding: 8px;
-  transition: all 0.2s ease-in;
-}
-.item-form input[type='text'] {
-  flex: 1;
-  outline: none;
-  border: 2px solid darkgrey;
-  background-color: var(--card-bg);
-}
-.item-form input[type='text']:focus {
-  border-color: dimgray;
-}
-.item-form input[type='submit'] {
-  background-color: var(--card-fg);
-  font-weight: bold;
-}
-.item-form input[type='submit']:hover {
-  transform: scale(1.1);
-}
-
-.item-form {
-  display: flex;
-  gap: 10px;
-}
-
-h3 span {
-  color: dimgray;
-  font-size: 0.96rem;
-}
-
-.col-card {
+.collection {
+  position: relative;
   height: 200px;
 
-  background-color: var(--card-fg);
-  border-radius: 8px;
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  transition: all 0.2s ease-in;
-  transition-property: transform, background-color;
-  border: 4px solid transparent;
-  overflow: hidden;
-  cursor: pointer;
-
-  gap: 10px;
-}
-
-.col-card-title {
   color: dimgray;
-  font-weight: bold;
-  font-size: 1.3rem;
-}
-
-.col-details button {
-  border: none;
-  border-radius: 6px;
-
-  /* font-size: 0.96rem; */
-  font-size: 16px;
-  font-weight: bold;
-  letter-spacing: 1.15px;
-
-  padding: 8px 12px;
-  background: var(--card-fg);
-  transition: all 0.1s ease-in;
-}
-
-.col-details button:hover {
-  transform: scale(1.025);
-}
-
-.col-card svg {
-  opacity: 0.2;
-}
-
-.col-card:hover {
-  transform: scale(1.025);
-  background-color: var(--card-fg-hover);
-}
-
-.col-nav {
-  width: min-content;
-  display: flex;
-}
-
-.col-nav button {
   font-size: 1.5rem;
   font-weight: bold;
-  transition: all 0.1s ease-in;
-
-  background-color: var(--card-fg);
-  border: none;
-  padding: 12px;
-}
-
-.col-nav button:hover {
-  letter-spacing: 8px;
-  background-color: var(--card-fg-hover);
-  cursor: context-menu;
-}
-
-.col-nav :first-child {
-  background-color: var(--card-bg);
-  border-top-left-radius: 8px;
-}
-
-.col-nav :first-child:hover {
-  letter-spacing: normal;
-  background-color: var(--card-bg);
-}
-
-.col-nav :last-child {
-  border-top-right-radius: 8px;
-}
-.col p {
-  pointer-events: none;
-}
-
-.mod-bg {
-  display: none;
-  position: fixed;
-  z-index: 1;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0, 0, 0, 0.4);
-}
-
-.mod-card {
-  background-color: rgba(254, 254, 254, 1);
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  border: 4px solid dimgray;
-  border-radius: 8px;
-  width: 80%;
 
   display: flex;
-  animation-name: animateMod;
-  animation-duration: 0.3s;
+  justify-content: center;
+  align-items: center;
+
+  border: 4px solid transparent;
+
+  transition: all 0.2s ease-in;
+  transition-property: transform, background-color;
 }
 
-.mod-card input {
-  background-color: inherit;
-  padding: 20px;
+.collection button {
+  position: absolute;
+  inset: 0;
+  background: transparent;
   border: none;
-  flex: 1;
-  border-radius: 12px;
-
-  font-size: 1.3rem;
-}
-
-.mod-card input:focus {
-  outline: none;
-}
-
-@keyframes animateMod {
-  from {
-    top: 100%;
-    opacity: 0;
-  }
-  to {
-    top: 50%;
-    opacity: 1;
-  }
-}
-
-form {
-  display: contents;
-}
-
-button.rb {
-  background-color: rgba(255, 208, 0, 0.48);
-  color: rgb(80, 65, 0);
-}
-
-button.delb {
-  background-color: rgba(220, 0, 0, 0.4);
-  color: rgb(80, 0, 0);
+  cursor: pointer;
 }

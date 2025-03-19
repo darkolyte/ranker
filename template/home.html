@@ -1,0 +1,12 @@
+<div class="content">
+    <div class="card collections">
+        <form>
+            {{range .Data}}
+                <div class="card collection">
+                    <p>{{.Name}}</p>
+                    <button formaction="/rank/{{.Id}}"></button>
+                </div>
+            {{end}}
+        </form>
+    </div>
+</div>
