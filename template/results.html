@@ -30,11 +30,11 @@
             <h2>Matchups</h2>
             {{range .Matchups}}
                 <div class="card matchup">
-                    <span class="L">{{.Loser}}</span>
+                    <span class="{{if eq .Winner .FirstItem}}W{{else}}L{{end}}">{{.FirstItem}}</span>
                     vs
-                    <span class="W">{{.Winner}}</span>
+                    <span class="{{if eq .Winner .SecondItem}}W{{else}}L{{end}}">{{.SecondItem}}</span>
                 </div>
-            {{end}}
+            {{end}}        
         </div>
     </div>
 </div>

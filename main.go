@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"html/template"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -66,7 +67,6 @@ func initDB() {
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
 	);
-	DROP TABLE rankings;
 	CREATE TABLE IF NOT EXISTS rankings (
 		id INTEGER NOT NULL PRIMARY KEY,
 		user_id TEXT,
@@ -177,6 +177,7 @@ func serveRankPage(w http.ResponseWriter, r *http.Request) {
 
 	if !exists {
 		pairs := generatePairs(getCollectionItems(collectionId))
+		shufflePairs(pairs)
 		for _, pair := range pairs {
 			_, err := db.Exec("INSERT INTO rankings (user_id, first_item_id, second_item_id, collection_id) VALUES (?, ?, ?, ?)", userId, pair[0], pair[1], collectionId)
 			if err != nil {
@@ -245,6 +246,7 @@ func handleRankUpdate(w http.ResponseWriter, r *http.Request) {
 
 func serveResultsPage(w http.ResponseWriter, r *http.Request) {
 	userId := r.RemoteAddr
+	// userId := "[::1]:56136"
 
 	collectionIdStr := r.PathValue("id")
 
@@ -292,7 +294,7 @@ func serveResultsPage(w http.ResponseWriter, r *http.Request) {
 		ranks = append(ranks, rank)
 	}
 
-	matchupRows, err := db.Query("SELECT i_winner.name AS winner, CASE WHEN r.winner_id = r.first_item_id THEN i2.name ELSE i1.name END AS loser FROM rankings r JOIN items i1 ON r.first_item_id = i1.id JOIN items i2 ON r.second_item_id = i2.id JOIN items i_winner ON r.winner_id = i_winner.id WHERE r.collection_id = ? and r.user_id = ?;", collectionId, userId)
+	matchupRows, err := db.Query("SELECT i1.name, i2.name, i_winner.name FROM rankings r JOIN items i1 ON r.first_item_id = i1.id JOIN items i2 ON r.second_item_id = i2.id JOIN items i_winner ON r.winner_id = i_winner.id WHERE r.collection_id = ? and r.user_id = ?;", collectionId, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -300,21 +302,32 @@ func serveResultsPage(w http.ResponseWriter, r *http.Request) {
 	defer matchupRows.Close()
 
 	type Matchup struct {
-		Winner string
-		Loser  string
+		FirstItem  string
+		SecondItem string
+		Winner     string
 	}
 
 	var matchups []Matchup
 
 	for matchupRows.Next() {
 		var matchup Matchup
-		if err := matchupRows.Scan(&matchup.Winner, &matchup.Loser); err != nil {
+		if err := matchupRows.Scan(&matchup.FirstItem, &matchup.SecondItem, &matchup.Winner); err != nil {
 			log.Print(err)
 			continue
 		}
 		matchups = append(matchups, matchup)
 	}
-	// Check if user has actually ranked, if not redirect to "/rank/{id}"
+
+	for i := len(ranks) - 1; i > 1; i-- {
+		if ranks[i].Wins != ranks[i-1].Wins {
+			continue
+		}
+		for _, matchup := range matchups {
+			if (matchup.Winner == ranks[i].Name) && (matchup.FirstItem == ranks[i-1].Name || matchup.SecondItem == ranks[i-1].Name) {
+				ranks[i], ranks[i-1] = ranks[i-1], ranks[i]
+			}
+		}
+	}
 
 	parseTemplates() // for testing
 	tpl.ExecuteTemplate(w, "base.html", map[string]any{
@@ -345,6 +358,21 @@ func generatePairs(items []Item) [][]int {
 		}
 	}
 	return pairs
+}
+
+func shufflePairs(pairs [][]int) {
+
+	rand.Shuffle(len(pairs), func(i, j int) {
+		pairs[i], pairs[j] = pairs[j], pairs[i]
+
+		if rand.Intn(2) == 0 {
+			pairs[i][0], pairs[i][1] = pairs[i][1], pairs[i][0]
+		}
+
+		if rand.Intn(2) == 0 {
+			pairs[j][0], pairs[j][1] = pairs[j][1], pairs[j][0]
+		}
+	})
 }
 
 // func getCollectionWithItems(id int) Collection {
