@@ -22,7 +22,7 @@ html {
 
 body {
   background: var(--page-bg);
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 body:before {
@@ -135,6 +135,12 @@ td {
 }
 
 .results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.matchups {
   display: flex;
   flex-direction: column;
   gap: 10px;

@@ -123,8 +123,6 @@ func registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /rank/{id}/{$}", serveRankPage)
 	mux.HandleFunc("GET /results/{id}/{$}", serveResultsPage)
 
-	// mux.HandleFunc("GET /home/{$}", serveHomePage) ?
-
 	mux.HandleFunc("POST /rank/update", handleRankUpdate)
 }
 
@@ -247,15 +245,82 @@ func handleRankUpdate(w http.ResponseWriter, r *http.Request) {
 
 func serveResultsPage(w http.ResponseWriter, r *http.Request) {
 	userId := r.RemoteAddr
-	mu.Lock()
-	defer mu.Unlock()
 
+	collectionIdStr := r.PathValue("id")
+
+	collectionId, err := strconv.Atoi(collectionIdStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var hasUnresolvedMatchup bool
+	err = db.QueryRow("SELECT(COUNT(*) = 0 OR COUNT(*) > COUNT(winner_id)) FROM rankings WHERE user_id = ? AND collection_id = ?;", userId, collectionId).Scan(&hasUnresolvedMatchup)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if hasUnresolvedMatchup {
+		http.Redirect(w, r, "/rank/"+collectionIdStr, http.StatusSeeOther)
+		return
+	}
+
+	rankRows, err := db.Query("SELECT i.name, SUM(CASE WHEN winner_id = item_id THEN 1 ELSE 0 END) AS wins, SUM(CASE WHEN winner_id <> item_id THEN 1 ELSE 0 END) AS losses FROM( SELECT first_item_id AS item_id, winner_id FROM rankings WHERE collection_id = ? AND user_id = ? UNION ALL SELECT second_item_id AS item_id, winner_id FROM rankings WHERE collection_id = ? AND user_id = ?) AS r LEFT JOIN items i ON i.id = r.item_id GROUP BY i.id, i.name ORDER BY wins DESC;", collectionId, userId, collectionId, userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rankRows.Close()
+
+	type Rank struct {
+		Position int
+		Name     string
+		Wins     int
+		Losses   int
+	}
+
+	var ranks []Rank
+
+	for rankRows.Next() {
+		var rank Rank
+		if err := rankRows.Scan(&rank.Name, &rank.Wins, &rank.Losses); err != nil {
+			log.Print(err)
+			continue
+		}
+		rank.Position = len(ranks) + 1
+		ranks = append(ranks, rank)
+	}
+
+	matchupRows, err := db.Query("SELECT i_winner.name AS winner, CASE WHEN r.winner_id = r.first_item_id THEN i2.name ELSE i1.name END AS loser FROM rankings r JOIN items i1 ON r.first_item_id = i1.id JOIN items i2 ON r.second_item_id = i2.id JOIN items i_winner ON r.winner_id = i_winner.id WHERE r.collection_id = ? and r.user_id = ?;", collectionId, userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer matchupRows.Close()
+
+	type Matchup struct {
+		Winner string
+		Loser  string
+	}
+
+	var matchups []Matchup
+
+	for matchupRows.Next() {
+		var matchup Matchup
+		if err := matchupRows.Scan(&matchup.Winner, &matchup.Loser); err != nil {
+			log.Print(err)
+			continue
+		}
+		matchups = append(matchups, matchup)
+	}
 	// Check if user has actually ranked, if not redirect to "/rank/{id}"
 
 	parseTemplates() // for testing
 	tpl.ExecuteTemplate(w, "base.html", map[string]any{
-		"Page": "results.html",
-		"Data": userId,
+		"Page":     "results.html",
+		"Ranks":    ranks,
+		"Matchups": matchups,
 	})
 }
 

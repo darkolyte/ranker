@@ -14,29 +14,27 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>Example 2</td>
-                        <td>1</td>
-                        <td>0</td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td>Example 1</td>
-                        <td>0</td>
-                        <td>1</td>
-                    </tr>
+                    {{range .Ranks}}
+                        <tr>
+                            <td>{{.Position}}</td>
+                            <td>{{.Name}}</td>
+                            <td>{{.Wins}}</td>
+                            <td>{{.Losses}}</td>
+                        </tr>
+                    {{end}}
                 </tbody>
             </table>
         </div>
 
-        <div class="card">
+        <div class="card matchups">
             <h2>Matchups</h2>
-            <div class="card matchup">
-                <span class="L">Example 1</span>
-                vs
-                <span class="W">Example 2</span>
-            </div>
+            {{range .Matchups}}
+                <div class="card matchup">
+                    <span class="L">{{.Loser}}</span>
+                    vs
+                    <span class="W">{{.Winner}}</span>
+                </div>
+            {{end}}
         </div>
     </div>
 </div>
