@@ -26,6 +26,19 @@ type Item struct {
 	Name  string
 }
 
+type Rank struct {
+	Position int
+	Name     string
+	Wins     int
+	Losses   int
+}
+
+type Matchup struct {
+	FirstItem  string
+	SecondItem string
+	Winner     string
+}
+
 var (
 	db  *sql.DB
 	mu  sync.Mutex
@@ -120,10 +133,15 @@ func registerRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/", serveErrorPage)
 	mux.HandleFunc("GET /{$}", serveHomePage)
+	mux.HandleFunc("GET /collection/{id}/{$}", serveCollectionPage)
 	mux.HandleFunc("GET /rank/{id}/{$}", serveRankPage)
 	mux.HandleFunc("GET /results/{id}/{$}", serveResultsPage)
 
-	mux.HandleFunc("POST /rank/update", handleRankUpdate)
+	mux.HandleFunc("POST /rank/update", updateRank)
+	mux.HandleFunc("POST /collection/create", createCollection)
+	mux.HandleFunc("POST /collection/delete", deleteCollection)
+	mux.HandleFunc("POST /item/create", createItem)
+	mux.HandleFunc("POST /item/delete", deleteItem)
 }
 
 func serveStaticFiles(w http.ResponseWriter, r *http.Request) {
@@ -153,6 +171,19 @@ func serveHomePage(w http.ResponseWriter, r *http.Request) {
 	tpl.ExecuteTemplate(w, "base.html", map[string]any{
 		"Page":        "home.html",
 		"Collections": getCollectionsWithItems(),
+	})
+}
+
+func serveCollectionPage(w http.ResponseWriter, r *http.Request) {
+	collectionId, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		log.Print("invalid collection id")
+		return
+	}
+	parseTemplates()
+	tpl.ExecuteTemplate(w, "base.html", map[string]any{
+		"Page":       "collections.html",
+		"Collection": getCollectionWithItems(collectionId),
 	})
 }
 
@@ -205,7 +236,7 @@ func serveRankPage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func handleRankUpdate(w http.ResponseWriter, r *http.Request) {
+func updateRank(w http.ResponseWriter, r *http.Request) {
 	userId := r.RemoteAddr
 	mu.Lock()
 	defer mu.Unlock()
@@ -246,7 +277,6 @@ func handleRankUpdate(w http.ResponseWriter, r *http.Request) {
 
 func serveResultsPage(w http.ResponseWriter, r *http.Request) {
 	userId := r.RemoteAddr
-	// userId := "[::1]:56136"
 
 	collectionIdStr := r.PathValue("id")
 
@@ -263,6 +293,8 @@ func serveResultsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// stop attempting to rank empty collections
+
 	if hasUnresolvedMatchup {
 		http.Redirect(w, r, "/rank/"+collectionIdStr, http.StatusSeeOther)
 		return
@@ -274,13 +306,6 @@ func serveResultsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer rankRows.Close()
-
-	type Rank struct {
-		Position int
-		Name     string
-		Wins     int
-		Losses   int
-	}
 
 	var ranks []Rank
 
@@ -300,12 +325,6 @@ func serveResultsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer matchupRows.Close()
-
-	type Matchup struct {
-		FirstItem  string
-		SecondItem string
-		Winner     string
-	}
 
 	var matchups []Matchup
 
@@ -335,6 +354,59 @@ func serveResultsPage(w http.ResponseWriter, r *http.Request) {
 		"Ranks":    ranks,
 		"Matchups": matchups,
 	})
+}
+
+func createCollection(w http.ResponseWriter, r *http.Request) {
+	name := r.PostFormValue("name")
+	if name == "" {
+		log.Print("empty collection name provided")
+	} else {
+
+		_, err := db.Exec("INSERT INTO collections (name) VALUES (?)", name)
+		if err != nil {
+			log.Print("failed to create collection")
+			return
+		}
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func deleteCollection(w http.ResponseWriter, r *http.Request) {
+	_, err := db.Exec("DELETE FROM collections WHERE id >= ?", 7)
+	if err != nil {
+		log.Print("couldn't do it,", err)
+		return
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func createItem(w http.ResponseWriter, r *http.Request) {
+	name := r.PostFormValue("name")
+	collectionIdStr := r.PostFormValue("collection_id")
+	collectionId, err := strconv.Atoi(collectionIdStr)
+	if err != nil {
+		log.Print("failed to create collection item")
+		return
+	}
+
+	_, err = db.Exec("INSERT INTO items (name, image, collection_id) VALUES (?,?,?)", name, "", collectionId)
+	if err != nil {
+		log.Print("failed to create collection item")
+		return
+	}
+
+	http.Redirect(w, r, "/collection/"+collectionIdStr, http.StatusSeeOther)
+}
+
+func deleteItem(w http.ResponseWriter, r *http.Request) {
+	collectionIdStr := r.PostFormValue("collection_id")
+
+	_, err := db.Exec("DELETE FROM items WHERE id >= ?", 86)
+	if err != nil {
+		log.Print("couldn't do it,", err)
+		return
+	}
+	http.Redirect(w, r, "/collection/"+collectionIdStr, http.StatusSeeOther)
 }
 
 func getItemsById(ids []int) []Item {
@@ -375,17 +447,17 @@ func shufflePairs(pairs [][]int) {
 	})
 }
 
-// func getCollectionWithItems(id int) Collection {
-// 	var col Collection
+func getCollectionWithItems(id int) Collection {
+	var col Collection
 
-// 	err := db.QueryRow("SELECT name FROM collections WHERE id = ?", id).Scan(col.Name)
-// 	if err != nil {
-// 		log.Print(err)
-// 		return col
-// 	}
-// 	col.Id, col.Items = id, getCollectionItems(id)
-// 	return col
-// }
+	err := db.QueryRow("SELECT name FROM collections WHERE id = ?", id).Scan(&col.Name)
+	if err != nil {
+		log.Print(err)
+		return col
+	}
+	col.Id, col.Items = id, getCollectionItems(id)
+	return col
+}
 
 func getCollectionsWithItems() []Collection {
 	var cols []Collection

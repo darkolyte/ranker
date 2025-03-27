@@ -1,0 +1,20 @@
+<div class="content">
+    <div class="card grid">
+            {{range .Collection.Items}}
+                <button class="card grid-item">
+                    <p>{{.Name}}</p>
+                </button>
+            {{end}}
+    </div>
+    <div class="card adder">
+        <form method="post" action="/item/create">
+            <input type="hidden" name="collection_id" value="{{.Collection.Id}}">
+            <input type="text" name="name" placeholder="type item name"/>
+            <button>Create New Item</button>
+        </form>
+        <form method="post" action="/item/delete">
+            <input type="hidden" name="collection_id" value="{{.Collection.Id}}">
+            <button>Delete All New Items</button>
+        </form>
+    </div>
+</div>
