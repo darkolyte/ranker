@@ -9,7 +9,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 
 	_ "modernc.org/sqlite"
 )
@@ -41,7 +40,6 @@ type Matchup struct {
 
 var (
 	db  *sql.DB
-	mu  sync.Mutex
 	tpl *template.Template
 )
 
@@ -189,8 +187,6 @@ func serveCollectionPage(w http.ResponseWriter, r *http.Request) {
 
 func serveRankPage(w http.ResponseWriter, r *http.Request) {
 	userId := r.RemoteAddr
-	mu.Lock()
-	defer mu.Unlock()
 
 	collectionIdStr := r.PathValue("id")
 	collectionId, err := strconv.Atoi(collectionIdStr)
@@ -207,7 +203,12 @@ func serveRankPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !exists {
-		pairs := generatePairs(getCollectionItems(collectionId))
+		items := getCollectionItems(collectionId)
+		if len(items) == 0 {
+			http.Redirect(w, r, "/collection/"+collectionIdStr, http.StatusSeeOther)
+			return
+		}
+		pairs := generatePairs(items)
 		shufflePairs(pairs)
 		for _, pair := range pairs {
 			_, err := db.Exec("INSERT INTO rankings (user_id, first_item_id, second_item_id, collection_id) VALUES (?, ?, ?, ?)", userId, pair[0], pair[1], collectionId)
@@ -238,8 +239,6 @@ func serveRankPage(w http.ResponseWriter, r *http.Request) {
 
 func updateRank(w http.ResponseWriter, r *http.Request) {
 	userId := r.RemoteAddr
-	mu.Lock()
-	defer mu.Unlock()
 
 	firstId, err := strconv.Atoi(r.PostFormValue("first_id"))
 	if err != nil {

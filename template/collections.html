@@ -1,4 +1,9 @@
 <div class="content">
+    <div class="card">
+        <form method="get" action="/rank/{{.Collection.Id}}">
+            <button>Start Ranking</button>
+        </form>
+    </div>
     <div class="card grid">
             {{range .Collection.Items}}
                 <button class="card grid-item">
